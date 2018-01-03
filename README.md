@@ -1,2 +1,2 @@
 # narpc
-RPC library based on Java NIO
+Nio based RPC library
