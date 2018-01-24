@@ -73,6 +73,7 @@ public class NaRPCDispatcher<R extends NaRPCMessage, T extends NaRPCMessage> imp
 								T response = service.processRequest(request);
 								channel.transmit(ticket, response);	
 							} else if (ticket < 0){
+								LOG.info("closing channel " + channel.address());
 								key.cancel();
 								channel.close();
 							} else {

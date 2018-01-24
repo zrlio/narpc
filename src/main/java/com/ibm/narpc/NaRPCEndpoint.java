@@ -72,6 +72,9 @@ public class NaRPCEndpoint<R extends NaRPCMessage, T extends NaRPCMessage> exten
 		if (locked) {
 			if (!done.get()){
 				long ticket = fetchBuffer(channel, buffer);
+				if (ticket < 0){
+					throw new IOException("Got invalid ticket, connection closed? " + ticket);
+				}
 				NaRPCFuture<R,T> future = pendingRPCs.remove(ticket);
 				future.getResponse().update(buffer);
 				future.signal();
