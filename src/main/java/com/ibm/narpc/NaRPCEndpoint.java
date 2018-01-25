@@ -87,6 +87,7 @@ public class NaRPCEndpoint<R extends NaRPCMessage, T extends NaRPCMessage> exten
 	public void connect(InetSocketAddress address) throws IOException {
 		this.channel.connect(address);
 		this.channel.socket().setTcpNoDelay(group.isNodelay());
+		this.channel.socket().setReuseAddress(true);
 		this.channel.configureBlocking(false);		
 	}	
 	

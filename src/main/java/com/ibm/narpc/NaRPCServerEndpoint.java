@@ -43,6 +43,7 @@ public class NaRPCServerEndpoint<R extends NaRPCMessage, T extends NaRPCMessage>
 	}
 
 	public NaRPCServerEndpoint<R,T> bind(InetSocketAddress address) throws IOException {
+		serverSocket.socket().setReuseAddress(true);
 		serverSocket.bind(address);
 		return this;
 	}

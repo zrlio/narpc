@@ -96,6 +96,7 @@ public class NaRPCDispatcher<R extends NaRPCMessage, T extends NaRPCMessage> imp
 			SocketChannel socket = channel.getSocketChannel();
 			socket.configureBlocking(false);
 			socket.socket().setTcpNoDelay(group.isNodelay());
+			socket.socket().setReuseAddress(true);
 			socket.register(selector, SelectionKey.OP_READ, channel);
 			LOG.info("adding new channel to selector, from " + socket.getRemoteAddress());
 			channel = incomingChannels.poll();
