@@ -32,23 +32,29 @@ import org.slf4j.Logger;
 
 public class NaRPCDispatcher<R extends NaRPCMessage, T extends NaRPCMessage> implements Runnable {
     static private Logger LOG = NaRPCUtils.getLogger();
-//    static final int HEADERSIZE = Integer.BYTES + Long.BYTES;
     
     private NaRPCGroup group;
     private LinkedBlockingQueue<NaRPCServerChannel> incomingChannels;
     private NaRPCService<R,T> service;
     private Selector selector;
     private R request;
+    private int id;
+    
+    public NaRPCDispatcher() {
+    	
+    }
 
-    public NaRPCDispatcher(NaRPCGroup group, NaRPCService<R,T> service) throws IOException {
+    public NaRPCDispatcher(NaRPCGroup group, NaRPCService<R,T> service, int id) throws IOException {
     	this.group = group;
         this.service = service;
+        this.id = id;
         this.selector = Selector.open();
         this.incomingChannels = new LinkedBlockingQueue<NaRPCServerChannel>();
         this.request = service.createRequest();
     }
 
     public void addChannel(NaRPCServerChannel endpoint) throws IOException {
+//    	LOG.info("adding connection " + endpoint.address() + " to dispatcher with id " + id);
     	incomingChannels.add(endpoint);
     	selector.wakeup();
 	}
