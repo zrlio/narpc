@@ -57,17 +57,23 @@ public class SimpleRpcClient implements Runnable {
 		int loop = queueDepth;
 		int batchCount = queueDepth;
 		int threadCount = 1;
+		int port = 1234;
+		String address = "localhost";		
 		
 		if (args != null) {
 			Option queueOption = Option.builder("q").desc("queue length").hasArg().build();
 			Option loopOption = Option.builder("k").desc("loop").hasArg().build();
 			Option threadOption = Option.builder("n").desc("number of threads").hasArg().build();
 			Option batchOption = Option.builder("b").desc("batch of RPCs").hasArg().build();
+			Option addressOption = Option.builder("a").desc("address").hasArg().build();
+			Option portOption = Option.builder("p").desc("port").hasArg().build();			
 			Options options = new Options();
 			options.addOption(queueOption);
 			options.addOption(loopOption);
 			options.addOption(threadOption);
 			options.addOption(batchOption);
+			options.addOption(addressOption);
+			options.addOption(portOption);			
 			CommandLineParser parser = new DefaultParser();
 
 			try {
@@ -83,7 +89,13 @@ public class SimpleRpcClient implements Runnable {
 				}	
 				if (line.hasOption(batchOption.getOpt())) {
 					batchCount = Integer.parseInt(line.getOptionValue(batchOption.getOpt()));
-				}					
+				}	
+				if (line.hasOption(addressOption.getOpt())) {
+					address = line.getOptionValue(addressOption.getOpt());
+				}	
+				if (line.hasOption(portOption.getOpt())) {
+					port = Integer.parseInt(line.getOptionValue(portOption.getOpt()));
+				}				
 			} catch (ParseException e) {
 				HelpFormatter formatter = new HelpFormatter();
 				formatter.printHelp("TCP RPC", options);
@@ -93,8 +105,8 @@ public class SimpleRpcClient implements Runnable {
 		
 		NaRPCClientGroup<SimpleRpcRequest, SimpleRpcResponse> clientGroup = new NaRPCClientGroup<SimpleRpcRequest, SimpleRpcResponse>(queueDepth, NaRPCGroup.DEFAULT_MESSAGE_SIZE, true);
 		NaRPCEndpoint<SimpleRpcRequest, SimpleRpcResponse> endpoint = clientGroup.createEndpoint();
-		InetSocketAddress address = new InetSocketAddress("localhost", 1234);
-		endpoint.connect(address);	
+		InetSocketAddress socketAddress = new InetSocketAddress(address, port);
+		endpoint.connect(socketAddress);	
 		Thread[] threads = new Thread[threadCount];
 		for (int i = 0; i < threadCount; i++){
 			SimpleRpcClient client = new SimpleRpcClient(i, endpoint, queueDepth, batchCount, loop);

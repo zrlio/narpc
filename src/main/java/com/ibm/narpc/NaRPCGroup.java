@@ -7,23 +7,20 @@ public class NaRPCGroup {
 	
 	public static int DEFAULT_QUEUE_DEPTH = 16;
 	public static int DEFAULT_MESSAGE_SIZE = 512;
+	public static boolean DEFAULT_NODELAY = false;
 	
 	private int queueDepth;
 	private int messageSize;
 	private boolean nodelay;
 	
 	public NaRPCGroup(){
-		this(DEFAULT_QUEUE_DEPTH, DEFAULT_MESSAGE_SIZE, false);
-//		this.queueDepth = DEFAULT_QUEUE_DEPTH;
-//		this.messageSize = DEFAULT_MESSAGE_SIZE;
-//		this.nodelay = false;
+		this(DEFAULT_QUEUE_DEPTH, DEFAULT_MESSAGE_SIZE, DEFAULT_NODELAY);
 	}	
 	
 	public NaRPCGroup(int queueDepth, int messageSize, boolean nodelay){
 		this.queueDepth = queueDepth;
 		this.messageSize = messageSize;
 		this.nodelay = nodelay;
-		LOG.info("new NaRPC group, queueDepth " + this.queueDepth + ", messageSize " + messageSize);
 	}
 
 	public int getQueueDepth() {

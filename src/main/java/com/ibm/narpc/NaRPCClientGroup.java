@@ -23,14 +23,19 @@ package com.ibm.narpc;
 
 import java.nio.channels.SocketChannel;
 
+import org.slf4j.Logger;
+
 public class NaRPCClientGroup<R extends NaRPCMessage, T extends NaRPCMessage> extends NaRPCGroup {
+	private static final Logger LOG = NaRPCUtils.getLogger();
 	
 	public NaRPCClientGroup() {
 		super();
+		LOG.info("new NaRPC server group v1.0, queueDepth " + this.getQueueDepth() + ", messageSize " + this.getMessageSize() + ", nodealy " + this.isNodelay());
 	}	
 	
 	public NaRPCClientGroup(int queueDepth, int messageSize, boolean nodelay) {
 		super(queueDepth, messageSize, nodelay);
+		LOG.info("new NaRPC server group v1.0, queueDepth " + this.getQueueDepth() + ", messageSize " + this.getMessageSize() + ", nodealy " + this.isNodelay());
 	}
 
 	public NaRPCEndpoint<R,T> createEndpoint() throws Exception{

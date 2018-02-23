@@ -18,18 +18,24 @@ import com.ibm.narpc.NaRPCService;
 
 public class SimpleRpcServer implements NaRPCService<SimpleRpcRequest, SimpleRpcResponse> {
 	private SimpleRpcResponse fakeResponse;
+	private String address;
+	private int port;
 	private int queueDepth;
+	private int cores;
 	
-	public SimpleRpcServer(int queueDepth){
+	public SimpleRpcServer(String address, int port, int queueDepth, int cores){
 		this.fakeResponse = new SimpleRpcResponse(100);
+		this.address = address;
+		this.port = port;
 		this.queueDepth = queueDepth;
+		this.cores = cores;
 	}
 	
 	private void run() {
 		try {
-			NaRPCServerGroup<SimpleRpcRequest, SimpleRpcResponse> serverGroup = new NaRPCServerGroup<SimpleRpcRequest, SimpleRpcResponse>(this, queueDepth, NaRPCGroup.DEFAULT_MESSAGE_SIZE, true);
+			NaRPCServerGroup<SimpleRpcRequest, SimpleRpcResponse> serverGroup = new NaRPCServerGroup<SimpleRpcRequest, SimpleRpcResponse>(this, queueDepth, NaRPCGroup.DEFAULT_MESSAGE_SIZE, true, cores);
 			NaRPCServerEndpoint<SimpleRpcRequest, SimpleRpcResponse> serverEndpoint = serverGroup.createServerEndpoint();
-			InetSocketAddress inetSocketAddress = new InetSocketAddress("localhost", 1234);
+			InetSocketAddress inetSocketAddress = new InetSocketAddress(address, port);
 			serverEndpoint.bind(inetSocketAddress);			
 			
 			while(true){
@@ -43,11 +49,20 @@ public class SimpleRpcServer implements NaRPCService<SimpleRpcRequest, SimpleRpc
 	
 	public static void main(String[] args){
 		int queueDepth = NaRPCGroup.DEFAULT_QUEUE_DEPTH;
+		int cores = NaRPCServerGroup.DEFAULT_DISPATCHARRAY;
+		int port = 1234;
+		String address = "localhost";
 		
 		if (args != null) {
 			Option queueOption = Option.builder("q").desc("queue length").hasArg().build();
+			Option coresOption = Option.builder("c").desc("#cores").hasArg().build();
+			Option addressOption = Option.builder("a").desc("address").hasArg().build();
+			Option portOption = Option.builder("p").desc("port").hasArg().build();
 			Options options = new Options();
 			options.addOption(queueOption);
+			options.addOption(coresOption);
+			options.addOption(addressOption);
+			options.addOption(portOption);
 			CommandLineParser parser = new DefaultParser();
 
 			try {
@@ -55,6 +70,15 @@ public class SimpleRpcServer implements NaRPCService<SimpleRpcRequest, SimpleRpc
 				if (line.hasOption(queueOption.getOpt())) {
 					queueDepth = Integer.parseInt(line.getOptionValue(queueOption.getOpt()));
 				}
+				if (line.hasOption(coresOption.getOpt())) {
+					cores = Integer.parseInt(line.getOptionValue(coresOption.getOpt()));
+				}	
+				if (line.hasOption(addressOption.getOpt())) {
+					address = line.getOptionValue(addressOption.getOpt());
+				}	
+				if (line.hasOption(portOption.getOpt())) {
+					port = Integer.parseInt(line.getOptionValue(portOption.getOpt()));
+				}					
 			} catch (ParseException e) {
 				HelpFormatter formatter = new HelpFormatter();
 				formatter.printHelp("TCP RPC", options);
@@ -62,7 +86,7 @@ public class SimpleRpcServer implements NaRPCService<SimpleRpcRequest, SimpleRpc
 			}
 		}		
 		
-		SimpleRpcServer server = new SimpleRpcServer(queueDepth);
+		SimpleRpcServer server = new SimpleRpcServer(address, port, queueDepth, cores);
 		server.run();
 	}
 

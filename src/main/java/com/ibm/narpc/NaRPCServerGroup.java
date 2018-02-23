@@ -22,25 +22,37 @@
 package com.ibm.narpc;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.Logger;
 
 public class NaRPCServerGroup<R extends NaRPCMessage, T extends NaRPCMessage> extends NaRPCGroup {
-	private NaRPCService<R,T> service;
-	private NaRPCDispatcher<R,T> dispatcher;
+	private static final Logger LOG = NaRPCUtils.getLogger();
+	public static final int DEFAULT_DISPATCHARRAY = 1;
+	
+	private ArrayList<NaRPCDispatcher<R,T>> dispatcherArray;
+	private AtomicInteger arrayIndex;
 	
 	public NaRPCServerGroup(NaRPCService<R,T> service) throws IOException{
-		super();
-		this.service = service;
-		this.dispatcher = new NaRPCDispatcher<R,T>(this, service);
-		Thread thread = new Thread(dispatcher);
-		thread.start();
-	}	
+		this(service, NaRPCGroup.DEFAULT_QUEUE_DEPTH, NaRPCGroup.DEFAULT_MESSAGE_SIZE, NaRPCGroup.DEFAULT_NODELAY, DEFAULT_DISPATCHARRAY);
+	}
 	
 	public NaRPCServerGroup(NaRPCService<R,T> service, int queueDepth, int messageSize, boolean nodelay) throws IOException{
+		this(service, queueDepth, messageSize, nodelay, DEFAULT_DISPATCHARRAY);
+	}	
+	
+	public NaRPCServerGroup(NaRPCService<R,T> service, int queueDepth, int messageSize, boolean nodelay, int arraySize) throws IOException{
 		super(queueDepth, messageSize, nodelay);
-		this.service = service;
-		this.dispatcher = new NaRPCDispatcher<R,T>(this, service);
-		Thread thread = new Thread(dispatcher);
-		thread.start();
+		this.dispatcherArray = new ArrayList<NaRPCDispatcher<R,T>>(arraySize);
+		for (int i = 0; i < arraySize; i++) {
+			NaRPCDispatcher<R,T> dispatcher = new NaRPCDispatcher<R,T>(this, service, i);
+			Thread thread = new Thread(dispatcher);
+			thread.start();
+			dispatcherArray.add(dispatcher);
+		}
+		this.arrayIndex = new AtomicInteger(0);
+		LOG.info("new NaRPC server group v1.0, queueDepth " + this.getQueueDepth() + ", messageSize " + this.getMessageSize() + ", nodealy " + this.isNodelay() + ", cores " + arraySize);
 	}
 	
 	public NaRPCServerEndpoint<R,T> createServerEndpoint() throws IOException{
@@ -48,6 +60,12 @@ public class NaRPCServerGroup<R extends NaRPCMessage, T extends NaRPCMessage> ex
 	}
 
 	public void registerEndpoint(NaRPCServerChannel endpoint) throws IOException {
-		this.dispatcher.addChannel(endpoint);
+		int index = getAndIncrement() % dispatcherArray.size();
+		NaRPCDispatcher<R,T> dispatcher = dispatcherArray.get(index);
+		dispatcher.addChannel(endpoint);
 	}
+	
+	private int getAndIncrement() {
+    	return arrayIndex.getAndIncrement() & Integer.MAX_VALUE;
+	}	
 }
