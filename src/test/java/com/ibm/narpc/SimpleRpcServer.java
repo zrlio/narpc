@@ -1,5 +1,6 @@
 package com.ibm.narpc;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 
@@ -11,10 +12,6 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import com.ibm.narpc.NaRPCEndpoint;
-import com.ibm.narpc.NaRPCServerEndpoint;
-import com.ibm.narpc.NaRPCServerGroup;
-import com.ibm.narpc.NaRPCService;
 
 public class SimpleRpcServer implements NaRPCService<SimpleRpcRequest, SimpleRpcResponse> {
 	private SimpleRpcResponse fakeResponse;
@@ -96,7 +93,19 @@ public class SimpleRpcServer implements NaRPCService<SimpleRpcRequest, SimpleRpc
 		fakeResponse.setValue(request.getCommand());
 		return fakeResponse;
 	}
-	
+
+	public void addEndpoint(NaRPCServerChannel newConnection) {
+		// no-op for now
+	}
+
+	public void removeEndpoint(NaRPCServerChannel closedConnection) {
+		try {
+			System.out.println(" RPC connection closed from " + closedConnection.address());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 	public SimpleRpcRequest createRequest(){
 		return new SimpleRpcRequest();
 	}

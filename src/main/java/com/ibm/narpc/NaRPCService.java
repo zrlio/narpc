@@ -24,4 +24,8 @@ package com.ibm.narpc;
 public interface NaRPCService<R extends NaRPCMessage, T extends NaRPCMessage> {
 	R createRequest();
 	T processRequest(R request);
+	/* event when a new connection arrives */
+	void addEndpoint(NaRPCServerChannel newConnection);
+	/* event when an old connection is closed, or aborted */
+	void removeEndpoint(NaRPCServerChannel closedConnection);
 }
