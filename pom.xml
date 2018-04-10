@@ -4,7 +4,7 @@
   <groupId>com.ibm.narpc</groupId>
   <artifactId>narpc</artifactId>
   <packaging>jar</packaging>
-  <version>1.1</version>
+  <version>1.2</version>
   <name>narpc</name>
 
   <url>https://github.com/patrickstuedi/narpc</url>
