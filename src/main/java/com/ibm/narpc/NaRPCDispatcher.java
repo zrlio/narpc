@@ -39,8 +39,10 @@ public class NaRPCDispatcher<R extends NaRPCMessage, T extends NaRPCMessage> imp
     private Selector selector;
     private R request;
     private int id;
+    private boolean isAlive;
     
     public NaRPCDispatcher() {
+    	this.isAlive = true;
     	
     }
 
@@ -51,6 +53,7 @@ public class NaRPCDispatcher<R extends NaRPCMessage, T extends NaRPCMessage> imp
         this.selector = Selector.open();
         this.incomingChannels = new LinkedBlockingQueue<NaRPCServerChannel>();
         this.request = service.createRequest();
+        this.isAlive = true;
     }
 
     public void addChannel(NaRPCServerChannel endpoint) throws IOException {
@@ -60,10 +63,14 @@ public class NaRPCDispatcher<R extends NaRPCMessage, T extends NaRPCMessage> imp
     	selector.wakeup();
 	}
 
+	public void close(){
+    	this.isAlive = false;
+	}
+
 	@Override
 	public void run() {
 		try {
-			while (true) {
+			while (this.isAlive) {
 				int readyChannels = selector.select(1000);
 				if (readyChannels > 0){
 					Set<SelectionKey> selectedKeys = selector.selectedKeys();
@@ -96,6 +103,7 @@ public class NaRPCDispatcher<R extends NaRPCMessage, T extends NaRPCMessage> imp
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		LOG.info("closing the select call");
 	}
 	
 	public void processIncomingChannels() throws IOException{

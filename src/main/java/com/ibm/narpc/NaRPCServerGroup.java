@@ -64,7 +64,14 @@ public class NaRPCServerGroup<R extends NaRPCMessage, T extends NaRPCMessage> ex
 		NaRPCDispatcher<R,T> dispatcher = dispatcherArray.get(index);
 		dispatcher.addChannel(endpoint);
 	}
-	
+
+	public void close() throws IOException {
+		// close all dispatchers.
+		for(int i = 0; i < dispatcherArray.size(); i++){
+			this.dispatcherArray.get(i).close();
+		}
+	}
+
 	private int getAndIncrement() {
     	return arrayIndex.getAndIncrement() & Integer.MAX_VALUE;
 	}	
