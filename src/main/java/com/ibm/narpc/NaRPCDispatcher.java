@@ -57,7 +57,6 @@ public class NaRPCDispatcher<R extends NaRPCMessage, T extends NaRPCMessage> imp
     }
 
     public void addChannel(NaRPCServerChannel endpoint) throws IOException {
-//    	LOG.info("adding connection " + endpoint.address() + " to dispatcher with id " + id);
 		this.service.addEndpoint(endpoint);
 		incomingChannels.add(endpoint);
     	selector.wakeup();
