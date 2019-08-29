@@ -81,10 +81,10 @@ public class NaRPCDispatcher<R extends NaRPCMessage, T extends NaRPCMessage> imp
 						}
 						if (key.isReadable()) {
 							NaRPCServerChannel channel = (NaRPCServerChannel) key.attachment();
-							long ticket = channel.fetch(request);
+							long ticket = channel.receiveMessage(request);
 							if(ticket > 0){
 								T response = service.processRequest(request);
-								channel.transmit(ticket, response);	
+								channel.transmitMessage(ticket, response);
 							} else if (ticket < 0){
 								LOG.info("closing channel " + channel.address());
 								this.service.removeEndpoint(channel);

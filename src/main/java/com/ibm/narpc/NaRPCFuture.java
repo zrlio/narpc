@@ -56,7 +56,7 @@ public class NaRPCFuture<R extends NaRPCMessage,T extends NaRPCMessage> implemen
 	public boolean isDone() {
 		try {
 			if (!done.get()){
-				endpoint.pollResponse(done);
+				endpoint.pollResponse();
 			}
 		} catch(Exception e){
 		}
@@ -67,7 +67,7 @@ public class NaRPCFuture<R extends NaRPCMessage,T extends NaRPCMessage> implemen
 	public T get() throws InterruptedException, ExecutionException {
 		try {
 			while (!done.get()){
-				endpoint.pollResponse(done);
+				endpoint.pollResponse();
 			}
 		} catch(Exception e){
 			throw new ExecutionException(e);
@@ -80,7 +80,7 @@ public class NaRPCFuture<R extends NaRPCMessage,T extends NaRPCMessage> implemen
 			ExecutionException, TimeoutException {
 		try {
 			while (!done.get()){
-				endpoint.pollResponse(done);
+				endpoint.pollResponse();
 			}
 		} catch(Exception e){
 			throw new ExecutionException(e);
