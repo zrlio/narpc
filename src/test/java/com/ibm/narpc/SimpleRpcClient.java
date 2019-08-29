@@ -64,8 +64,9 @@ public class SimpleRpcClient implements Runnable {
 					futureList.add(j, future);
 				}
 				for (NaRPCFuture<SimpleRpcRequest, SimpleRpcResponse> future: futureList){
-					future.get();
-//					System.out.println("id " + id + " got response, value " + future.get().getResult() + ", ticket " + future.getTicket());
+					SimpleRpcResponse resp = future.get();
+					SimpleRpcRequest req = future.getRequest();
+					System.out.println("id " + id + " request " + req.getCommand() + ", response " + resp.getResult());
 				}
 			}
 		} catch(Exception e){
