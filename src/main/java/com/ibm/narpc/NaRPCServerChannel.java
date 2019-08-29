@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-public class NaRPCServerChannel extends NaRPCChannel {
+public class NaRPCServerChannel {
 	private SocketChannel channel;
 	private ByteBuffer buffer;
 	
@@ -33,26 +33,28 @@ public class NaRPCServerChannel extends NaRPCChannel {
 		this.channel = channel;
 		this.buffer = ByteBuffer.allocate(group.getMessageSize());
 	}
-
-	public SocketChannel getSocketChannel() {
-		return channel;
-	}
 	
-	public long fetch(NaRPCMessage message) throws IOException {
-		long ticket = fetchBuffer(channel, buffer);
+	public long receiveMessage(NaRPCMessage message) throws IOException {
+		long ticket = NaRPCProtocol.fetchBuffer(channel, buffer);
 		if (ticket > 0){
 			message.update(buffer);	
 		}
 		return ticket;
 	}
 	
-	public void transmit(long ticket, NaRPCMessage message) throws IOException {
-		makeMessage(ticket, message, buffer);
-		transmitMessage(channel, buffer);
+	public void transmitMessage(long ticket, NaRPCMessage message) throws IOException {
+		NaRPCProtocol.makeMessage(ticket, message, buffer);
+		while(buffer.hasRemaining()){
+			channel.write(buffer);
+		}
 	}
 	
 	public void close() throws IOException{
 		this.channel.close();
+	}
+
+	public SocketChannel getSocketChannel() {
+		return channel;
 	}
 
 	public String address() throws IOException {

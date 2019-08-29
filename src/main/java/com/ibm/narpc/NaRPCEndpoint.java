@@ -23,6 +23,7 @@ package com.ibm.narpc;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -31,7 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class NaRPCEndpoint<R extends NaRPCMessage, T extends NaRPCMessage> extends NaRPCChannel {
+public class NaRPCEndpoint<R extends NaRPCMessage, T extends NaRPCMessage> {
 	private NaRPCGroup group;
 	private ConcurrentHashMap<Long, NaRPCFuture<R,T>> pendingRPCs;
 	private ArrayBlockingQueue<ByteBuffer> bufferQueue;	
@@ -43,81 +44,105 @@ public class NaRPCEndpoint<R extends NaRPCMessage, T extends NaRPCMessage> exten
 	public NaRPCEndpoint(NaRPCGroup group, SocketChannel channel) throws Exception {
 		this.group = group;
 		this.channel = channel;
+		this.channel.setOption(StandardSocketOptions.TCP_NODELAY, group.isNodelay());
+		this.channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 		this.pendingRPCs = new ConcurrentHashMap<Long, NaRPCFuture<R,T>>();
-		this.readLock = new ReentrantLock();
-		this.writeLock = new ReentrantLock();
 		this.bufferQueue = new ArrayBlockingQueue<ByteBuffer>(group.getQueueDepth());
 		for (int i = 0; i < group.getQueueDepth(); i++){
 			ByteBuffer buffer = ByteBuffer.allocate(group.getMessageSize());
 			bufferQueue.put(buffer);
 		}	
 		this.sequencer = new AtomicLong(1);
-	}
-
-	public NaRPCFuture<R,T> issueRequest(R request, T response) throws IOException {
-		ByteBuffer buffer = getBuffer();
-		long ticket = sequencer.getAndIncrement();
-		makeMessage(ticket, request, buffer);
-		NaRPCFuture<R,T> future = new NaRPCFuture<R,T>(this, request, response, ticket);
-		pendingRPCs.put(ticket, future);
-		while(!tryTransmitting(buffer)){
-		}
-		putBuffer(buffer);
-		return future;
-	}
-	
-	public void pollResponse(AtomicBoolean done) throws IOException {
-		ByteBuffer buffer = getBuffer();
-		boolean locked = readLock.tryLock();
-		if (locked) {
-			if (!done.get()){
-				long ticket = fetchBuffer(channel, buffer);
-				if (ticket < 0){
-					throw new IOException("Got invalid ticket, connection closed? " + ticket);
-				}
-				NaRPCFuture<R,T> future = pendingRPCs.remove(ticket);
-				future.getResponse().update(buffer);
-				future.signal();
-			} 
-			readLock.unlock();
-		} 
-		putBuffer(buffer);
+		this.readLock = new ReentrantLock();
+		this.writeLock = new ReentrantLock();
 	}
 
 	public void connect(InetSocketAddress address) throws IOException {
 		this.channel.connect(address);
-		this.channel.socket().setTcpNoDelay(group.isNodelay());
-		this.channel.socket().setReuseAddress(true);
-		this.channel.configureBlocking(false);		
-	}	
-	
+		this.channel.configureBlocking(false);
+	}
+
 	public void close() throws IOException{
 		this.channel.close();
+	}
+
+	public NaRPCFuture<R,T> issueRequest(R request, T response) throws IOException {
+		ByteBuffer buffer = getBuffer();
+		while(buffer == null){
+			buffer = getBuffer();
+		}
+		long ticket = sequencer.getAndIncrement();
+		NaRPCProtocol.makeMessage(ticket, request, buffer);
+		NaRPCFuture<R,T> future = new NaRPCFuture<R,T>(this, request, response, ticket);
+		pendingRPCs.put(ticket, future);
+
+		boolean wlocked = writeLock.tryLock();
+		if (wlocked){
+			channel.write(buffer);
+			while(buffer.hasRemaining()){
+				pollResponse();
+				channel.write(buffer);
+			}
+			writeLock.unlock();
+		}
+
+		putBuffer(buffer);
+		return future;
+	}
+
+	void pollResponse() throws IOException {
+		ByteBuffer buffer = getBuffer();
+		if (buffer == null){
+			return;
+		}
+		boolean rlocked = readLock.tryLock();
+		long ticket = 0;
+		if (rlocked){
+			ticket = NaRPCProtocol.fetchBuffer(channel, buffer);
+			readLock.unlock();
+		}
+		if (ticket > 0){
+			NaRPCFuture<R, T> future = pendingRPCs.remove(ticket);
+			future.getResponse().update(buffer);
+			future.signal();
+		}
+		putBuffer(buffer);
 	}
 	
 	public String address() throws IOException {
 		return channel.getRemoteAddress().toString();
 	}
 	
-	private boolean tryTransmitting(ByteBuffer buffer) throws IOException{
-		boolean locked = writeLock.tryLock();
-		if (locked) {
-			transmitMessage(channel, buffer);
-			writeLock.unlock();
-			return true;
-		} 		
-		return false;
-	}
-	
 	private ByteBuffer getBuffer(){
 		ByteBuffer buffer = bufferQueue.poll();
-		while(buffer == null){
-			buffer = bufferQueue.poll();
-		}
 		return buffer;
 	}
 	
 	private void putBuffer(ByteBuffer buffer){
 		bufferQueue.add(buffer);
 	}
+
+	//----------- Old stuff
+
+//	public NaRPCFuture<R,T> issueRequestOld(R request, T response) throws IOException {
+//		ByteBuffer buffer = getBuffer();
+//		long ticket = sequencer.getAndIncrement();
+//		makeMessage(ticket, request, buffer);
+//		NaRPCFuture<R,T> future = new NaRPCFuture<R,T>(this, request, response, ticket);
+//		pendingRPCs.put(ticket, future);
+//		while(!tryTransmittingOld(buffer)){
+//		}
+//		putBuffer(buffer);
+//		return future;
+//	}
+
+//	private boolean tryTransmittingOld(ByteBuffer buffer) throws IOException{
+//		boolean locked = writeLock.tryLock();
+//		if (locked) {
+//			transmitMessageOld(channel, buffer);
+//			writeLock.unlock();
+//			return true;
+//		}
+//		return false;
+//	}
 }
