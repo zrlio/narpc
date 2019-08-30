@@ -26,6 +26,10 @@ public class NaRPCProtocol {
 
     public static long fetchBuffer(SocketChannel channel, ByteBuffer buffer) throws IOException{
         buffer.clear().limit(HEADERSIZE);
+        int ret = channel.read(buffer);
+        if (ret <= 0){
+            return ret;
+        }
         while (buffer.hasRemaining()) {
             if (channel.read(buffer) < 0){
                 return -1;

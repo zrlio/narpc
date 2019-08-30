@@ -55,13 +55,15 @@ public class SimpleRpcClient implements Runnable {
 		try {
 			System.out.println("SimpleRPCClient, queueDepth " + queueDepth + ", batchCount " + batchCount + ", loopCount " + loopCount);
 			ArrayList<NaRPCFuture<SimpleRpcRequest, SimpleRpcResponse>> futureList = new ArrayList<NaRPCFuture<SimpleRpcRequest, SimpleRpcResponse>>(batchCount);
+			int command = 1;
 			for(int i = 0; i < loopCount; i++){
 				futureList.clear();
 				for (int j = 0; j < batchCount; j++){
-					SimpleRpcRequest request = new SimpleRpcRequest(i*batchCount + j);
+					SimpleRpcRequest request = new SimpleRpcRequest(command);
 					SimpleRpcResponse response = new SimpleRpcResponse();
 					NaRPCFuture<SimpleRpcRequest, SimpleRpcResponse> future = endpoint.issueRequest(request, response);
 					futureList.add(j, future);
+					command++;
 				}
 				for (NaRPCFuture<SimpleRpcRequest, SimpleRpcResponse> future: futureList){
 					SimpleRpcResponse resp = future.get();

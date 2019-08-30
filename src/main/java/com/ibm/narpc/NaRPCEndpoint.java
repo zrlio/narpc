@@ -76,15 +76,13 @@ public class NaRPCEndpoint<R extends NaRPCMessage, T extends NaRPCMessage> {
 		NaRPCFuture<R,T> future = new NaRPCFuture<R,T>(this, request, response, ticket);
 		pendingRPCs.put(ticket, future);
 
-		boolean wlocked = writeLock.tryLock();
-		if (wlocked){
+		while(!writeLock.tryLock());
+		channel.write(buffer);
+		while(buffer.hasRemaining()){
+			pollResponse();
 			channel.write(buffer);
-			while(buffer.hasRemaining()){
-				pollResponse();
-				channel.write(buffer);
-			}
-			writeLock.unlock();
 		}
+		writeLock.unlock();
 
 		putBuffer(buffer);
 		return future;
@@ -93,14 +91,15 @@ public class NaRPCEndpoint<R extends NaRPCMessage, T extends NaRPCMessage> {
 	void pollResponse() throws IOException {
 		ByteBuffer buffer = getBuffer();
 		if (buffer == null){
+			putBuffer(buffer);
 			return;
 		}
-		boolean rlocked = readLock.tryLock();
-		long ticket = 0;
-		if (rlocked){
-			ticket = NaRPCProtocol.fetchBuffer(channel, buffer);
-			readLock.unlock();
+		if(!readLock.tryLock()){
+			putBuffer(buffer);
+			return;
 		}
+		long ticket = NaRPCProtocol.fetchBuffer(channel, buffer);
+		readLock.unlock();
 		if (ticket > 0){
 			NaRPCFuture<R, T> future = pendingRPCs.remove(ticket);
 			future.getResponse().update(buffer);
