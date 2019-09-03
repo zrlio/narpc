@@ -52,7 +52,7 @@ public class NaRPCServerGroup<R extends NaRPCMessage, T extends NaRPCMessage> ex
 			dispatcherArray.add(dispatcher);
 		}
 		this.arrayIndex = new AtomicInteger(0);
-		LOG.info("new NaRPC server group v1.0, queueDepth " + this.getQueueDepth() + ", messageSize " + this.getMessageSize() + ", nodealy " + this.isNodelay() + ", cores " + arraySize);
+		LOG.info("new NaRPC server group v1.5.0, queueDepth " + this.getQueueDepth() + ", messageSize " + this.getMessageSize() + ", nodealy " + this.isNodelay() + ", cores " + arraySize);
 	}
 	
 	public NaRPCServerEndpoint<R,T> createServerEndpoint() throws IOException{

@@ -36,6 +36,9 @@ public class NaRPCServerChannel {
 	
 	public long receiveMessage(NaRPCMessage message) throws IOException {
 		long ticket = NaRPCProtocol.fetchBuffer(channel, buffer);
+		while(ticket == 0){
+            ticket = NaRPCProtocol.fetchBuffer(channel, buffer);
+        }
 		if (ticket > 0){
 			message.update(buffer);	
 		}
